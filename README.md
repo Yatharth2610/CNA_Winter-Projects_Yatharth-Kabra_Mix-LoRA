@@ -16,18 +16,27 @@ Implement the “Mix LoRA” concept — blending multiple low-rank adaptation l
 ✅ What This Project Achieves
 
 1.Trains multiple LoRA adapters on different tasks
+
 2.Blends adapters dynamically to create a multi-skill model
+
 3.Uses one frozen base model (no retraining)
+
 4.Demonstrates efficient model reuse
+
 5.Runs fully on 16 GB RAM without external APIs
+
 6.Extends beyond the baseline with learned routing and sparse activation
 
 🧠 High-Level Architecture
 Frozen Base Model (TinyLlama 1.1B)
  ├── LoRA Adapter: Sentiment
+ 
  ├── LoRA Adapter: Summarization
+ 
  └── Gating Network (learned)
+ 
         ↓
+        
    Sparse Adapter Selection (Top-1)
 
 🛠️ Step-by-Step Solution
