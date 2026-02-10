@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "scenario": "customer_support",
+    "task": "mixed",
+    "text": "Customer message: I waited 3 days for delivery. The product quality is good but your support team never replied. Can you summarize my issue and mention the overall sentiment?",
+    "expected_focus": [
+      "summary",
+      "sentiment"
+    ]
+  },
+  {
+    "id": 2,
+    "scenario": "app_review",
+    "task": "summary",
+    "text": "Summarize this app review in one line: The UI looks beautiful and payments are smooth, but the app crashes frequently on Android 13 and notifications don’t work.",
+    "expected_focus": [
+      "summary"
+    ]
+  },
+  {
+    "id": 3,
+    "scenario": "email_analysis",
+    "task": "sentiment",
+    "text": "Classify the sentiment of this email: I’m extremely disappointed. I paid for premium but got basic features. This feels like a scam.",
+    "expected_focus": [
+      "sentiment"
+    ]
+  },
+  {
+    "id": 4,
+    "scenario": "product_feedback",
+    "task": "mixed",
+    "text": "Give a short summary and highlight the tone: The laptop performance is great for coding, but the battery barely lasts 3 hours and the charger gets very hot.",
+    "expected_focus": [
+      "summary",
+      "sentiment"
+    ]
+  },
+  {
+    "id": 5,
+    "scenario": "business_note",
+    "task": "mixed",
+    "text": "Manager note: Client liked the demo but is worried about pricing and integration time. Summarize the concern and indicate sentiment.",
+    "expected_focus": [
+      "summary",
+      "sentiment"
+    ]
+  }
+]
