@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Model files
+*.pt
+*.bin
+*.safetensors
+lora_*/
+outputs/
+
+# Colab / notebooks
+.ipynb_checkpoints/
