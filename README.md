@@ -1,201 +1,239 @@
-# CNA_Winter-Projects_Yatharth-Kabra_Mix-LoRA
-MixLoRA: Multi-Skill Models via Low-Rank Adapter Mixing
-📌 Project Overview
+# 🚀 MixLoRA: Multi-Skill Language Models via Low-Rank Adapter Mixing
 
-Large language models are expensive to fine-tune for every new task.
-LoRA (Low-Rank Adaptation) enables efficient fine-tuning by learning small task-specific adapters while keeping the base model frozen.
+> **Blend multiple LoRA adapters → One model, many skills, minimal compute**
 
-This project implements MixLoRA — an extension of LoRA where multiple task-specific adapters are blended at inference time to create a multi-skilled model, demonstrating model reuse with minimal compute.
+---
 
-The system is designed to work under strict hardware constraints (16 GB RAM) while remaining fully runnable, modular, and extensible.
+## 📌 Overview
 
-🎯 Original Problem Statement
+Fine-tuning large language models for every new task is expensive and redundant. **LoRA (Low-Rank Adaptation)** enables lightweight task learning by training small adapters while keeping the base model frozen.
 
-Implement the “Mix LoRA” concept — blending multiple low-rank adaptation layers trained on different tasks to produce a multi-skilled model. Experiment with combinations like sentiment + summarization or art styles in diffusion models. It demonstrates powerful model reuse with minimal compute.
+**MixLoRA** extends this idea by **blending multiple LoRA adapters at inference time**, producing a **multi-skilled model** without retraining the base network.
 
-✅ What This Project Achieves
+This project provides a **fully runnable implementation on 16 GB RAM** with:
 
-1.Trains multiple LoRA adapters on different tasks
+* Task-specific LoRA adapters
+* Learned gating network
+* Sparse top-1 routing
+* End-to-end inference pipeline
 
-2.Blends adapters dynamically to create a multi-skill model
+---
 
-3.Uses one frozen base model (no retraining)
+## 🎯 Original Objective
 
-4.Demonstrates efficient model reuse
+> *Implement the MixLoRA concept — blending multiple low-rank adaptation layers trained on different tasks to produce a multi-skilled model. Demonstrate combinations like sentiment + summarization while ensuring model reuse with minimal compute.*
 
-5.Runs fully on 16 GB RAM without external APIs
+---
 
-6.Extends beyond the baseline with learned routing and sparse activation
+## 🧠 Architecture
 
-🧠 High-Level Architecture
-Frozen Base Model (TinyLlama 1.1B)
- ├── LoRA Adapter: Sentiment
- 
- ├── LoRA Adapter: Summarization
- 
- └── Gating Network (learned)
- 
-        ↓
-        
-   Sparse Adapter Selection (Top-1)
+```mermaid
+flowchart TD
+    A[User Prompt] --> B[TinyLlama Base Model 1.1B]
+    B --> C[Prompt Embedding]
+    C --> D[Gating Network]
+    D --> E{Top-1 Sparse Router}
+    E --> F[LoRA Sentiment]
+    E --> G[LoRA Summarization]
+    F --> H[Mixed Output]
+    G --> H
+```
 
-🛠️ Step-by-Step Solution
-Step 1 — Lightweight Base Model
+---
 
-Used TinyLlama (1.1B) to ensure fast execution on limited hardware
-Base model remains frozen throughout the project
+## 🛠 How LoRA Is Trained in This Project
 
-Why:
-Keeps compute cost low and enables adapter reuse.
+LoRA adapters are trained **independently per task** while the base model is frozen.
 
-Step 2 — Task-Specific LoRA Adapters
+### What is Trainable
 
-Two LoRA adapters are trained independently:
+| Component            | Updated?           |
+| -------------------- | ------------------ |
+| Base model weights   | ❌ Frozen           |
+| LoRA matrices (A, B) | ✅ Trainable        |
+| Gating network       | Trained separately |
 
-Sentiment Adapter → captures emotional polarity
+### Training Objective
 
-Summarization Adapter → captures compression and abstraction behavior
+* Causal language modeling loss on task-specific text
+* Target modules: `q_proj`, `v_proj`
+* Each adapter learns one behavior (sentiment or summarization)
 
-Each adapter:
+### Process
 
-Trains only a small number of parameters
+1. Attach LoRA to frozen model
+2. Train only low-rank parameters
+3. Save adapter
+4. Repeat for next task
 
-Is saved and reused independently
+**Benefits:** minimal compute, no forgetting, reusable skills.
 
-Why:
-Encapsulates skills modularly without modifying the base model.
+---
 
-Step 3 — MixLoRA (Adapter Blending)
+## ✨ Features
 
-Both adapters are loaded into a single model instance.
+| Feature               | Description                |
+| --------------------- | -------------------------- |
+| Multi-Adapter Loading | Combine LoRAs in one model |
+| Learned Routing       | Prompt-aware selection     |
+| Sparse Top-1          | MoE-style efficiency       |
+| Continual Design      | New skills plug-in         |
+| 16 GB Friendly        | CPU-first                  |
 
-At inference:
+---
 
-The effective model weights are:
+## 🚀 Getting Started
 
-W_final = W_base + α₁·ΔW_sentiment + α₂·ΔW_summary
+### Prerequisites
 
-Why:
-This is the core MixLoRA idea — skill composition without retraining.
+| Requirement | Version  |
+| ----------- | -------- |
+| Python      | ≥ 3.9    |
+| RAM         | 16 GB    |
+| GPU         | Optional |
 
-Step 4 — Learned Gating Network
+### Installation
 
-A small MLP gating network is introduced to:
+```bash
+pip install torch transformers peft datasets accelerate
+```
 
-Read the prompt embedding
+### Run
 
-Predict which adapter should be used
+```bash
+jupyter notebook mixlora_notebook.ipynb
+```
 
-The gating network outputs adapter weights automatically.
+👉 **No manual edits required**
 
-Why:
-Removes manual routing logic and makes the system adaptive.
+---
 
-Step 5 — Sparse Routing (Top-1)
+## 📤 Sample Results (Real-World Prompts)
 
-Instead of activating all adapters:
+### 1. Customer Support Triage
 
-Only the most relevant adapter is activated per prompt
+**Prompt**
 
-Why:
+```
+Customer message:
+"I waited 3 days for delivery. The product quality is good but your support team never replied. Can you summarize my issue and note the overall sentiment?"
+```
 
-Faster inference
+**Routing**
 
-Reduced interference
+| Adapter   | Weight |
+| --------- | ------ |
+| Sentiment | 0.45   |
+| Summary   | 0.55   |
 
-Scales to many adapters (MoE-style behavior)
+**Output**
 
-Step 6 — End-to-End Training
+> *“The customer reports delayed delivery and lack of support response while acknowledging good product quality, reflecting mixed but slightly negative sentiment.”*
 
-LoRA adapters are trained first
+---
 
-Gating network is trained separately using lightweight supervision
+### 2. App Review Digest
 
-Base model is never updated
+**Prompt**
 
-Why:
-Ensures stability and avoids catastrophic forgetting.
+```
+Summarize this app store review in one line:
+"The UI looks beautiful and payments are smooth, but the app crashes frequently on Android 13 and notifications don’t work."
+```
 
-✨ Features Summary
-Feature	Description
-LoRA adapters	Efficient task-specific fine-tuning
-MixLoRA	Adapter blending for multi-skill behavior
-Learned gating	Automatic adapter selection
-Sparse routing	Activates only the most relevant adapter
-Minimal compute	Runs on 16 GB RAM
-Modular design	New skills can be added easily
-🧪 Example Capabilities
+**Routing**
 
-Sentiment analysis
+| Adapter   | Weight |
+| --------- | ------ |
+| Sentiment | 0.20   |
+| Summary   | 0.80   |
 
-Text summarization
+**Output**
 
-Automatic switching between tasks based on prompt intent
+> *“The app offers great design and payments but suffers from crashes and broken notifications on Android.”*
 
-Example prompt:
+---
 
-"Summarize the emotional tone of this review..."
+### 3. Sentiment Classification
 
+**Prompt**
 
-The model:
+```
+Classify the sentiment of this email:
+"I’m extremely disappointed. I paid for premium but got basic features."
+```
 
-Detects summarization intent
+**Routing**
 
-Activates the appropriate adapter
+| Adapter   | Weight |
+| --------- | ------ |
+| Sentiment | 0.92   |
+| Summary   | 0.08   |
 
-Produces a coherent, task-appropriate output
+**Output**
 
-⚙️ Hardware & Runtime Constraints
+> *“The email expresses strong negative sentiment and frustration.”*
 
-RAM: 16 GB
+---
 
-GPU: Optional (CPU-only supported)
+### 4. Product Feedback (Balanced)
 
-No external APIs
+**Prompt**
 
-No API keys required
+```
+Give a short summary and highlight the tone:
+"The laptop performance is great, but battery lasts only 3 hours."
+```
 
-This makes the project:
+**Routing**
 
-Easy to reproduce
+| Adapter   | Weight |
+| --------- | ------ |
+| Sentiment | 0.50   |
+| Summary   | 0.50   |
 
-Suitable for coursework, research demos, and interviews
+**Output**
 
-🚀 Why This Matters
+> *“Good performance but poor battery life, indicating mixed sentiment.”*
 
-This project demonstrates that:
+---
 
-Large models do not need full retraining for every task
+## Design Justifications
 
-Skills can be learned once and reused forever
+* **Why not full fine-tuning?**
+  Expensive + forgetting; MixLoRA enables reusable skills.
 
-Adapter mixing enables modular, scalable AI systems
+* **Why TinyLlama?**
+  Fits 16 GB RAM while preserving concept validity.
 
-It reflects real-world trends in:
+* **Why sparse top-1?**
+  Reduces interference and speeds inference.
 
-Parameter-efficient fine-tuning
+* **Is gating supervised?**
+  Yes—lightweight intent labels.
 
-Mixture-of-Experts style routing
+---
 
-Continual and modular learning
+## ⚠ Troubleshooting
 
-📌 Limitations & Extensions
-Current Scope
+| Issue      | Fix              |
+| ---------- | ---------------- |
+| OOM        | `max_length=128` |
+| Slow CPU   | First run caches |
+| CUDA error | Auto CPU         |
 
-Focused on LLM MixLoRA
+---
 
-Uses small synthetic datasets for demonstration
+## 🧠 Key Takeaway
 
-Possible Extensions
+> **MixLoRA enables multi-skill intelligence by blending lightweight adapters on a single frozen model with minimal compute.**
 
-Diffusion LoRA style mixing (image generation)
+---
 
-Token-wise routing
+## 📜 License
 
-Adapter contribution visualization
+Educational use; base model follows TinyLlama license.
 
-Larger task libraries
+---
 
-🧠 Key Takeaway
-
-MixLoRA enables multi-skill intelligence by blending lightweight task adapters on top of a single frozen model, achieving powerful reuse with minimal compute.
+**Author:** MixLoRA Prototype – 2025
